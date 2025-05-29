@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Cadastro{% endblock %}
+
+{% block content %}
+<section class="auth-form">
+    <h2>Cadastro</h2>
+    <form action="{{ url_for('register') }}" method="POST" novalidate>
+        {{ form.hidden_tag() }} {# CSRF token #}
+        <div class="form-group">
+            {{ form.username.label }}
+            {{ form.username(class="form-control", required="required") }}
+            {% for error in form.username.errors %}
+                <span class="text-danger error-message">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.email.label }}
+            {{ form.email(class="form-control", required="required") }}
+            {% for error in form.email.errors %}
+                <span class="text-danger error-message">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.password.label }}
+            {{ form.password(class="form-control", required="required") }}
+            {% for error in form.password.errors %}
+                <span class="text-danger error-message">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.confirm_password.label }}
+            {{ form.confirm_password(class="form-control", required="required") }}
+            {% for error in form.confirm_password.errors %}
+                <span class="text-danger error-message">{{ error }}</span>
+            {% endfor %}
+        </div>
+        {{ form.submit(class="btn-primary") }}
+    </form>
+    <p style="margin-top: 15px; text-align:center;">Já tem uma conta? <a href="{{ url_for('login') }}">Faça login aqui</a>.</p>
+</section>
+{% endblock %}

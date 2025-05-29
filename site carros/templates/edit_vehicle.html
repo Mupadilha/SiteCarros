@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Editar Veículo{% endblock %}
+
+{% block content %}
+<section class="form-section">
+    <h2>Editar Veículo</h2>
+    <form action="{{ url_for('edit_vehicle', vehicle_id=vehicle_id) }}" method="POST" enctype="multipart/form-data" novalidate>
+        {{ form.hidden_tag() }} {# CSRF token #}
+        {{ form.delete_images_ids(id="delete_images_ids_field", style="display:none;") }} {# Campo oculto para IDs das imagens a deletar #}
+
+        <div class="form-group">
+            {{ form.brand.label }}
+            {{ form.brand(class="form-control", id="brand") }}
+            {% for error in form.brand.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.model.label }}
+            {{ form.model(class="form-control", id="model") }}
+            {% for error in form.model.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.year.label }}
+            {{ form.year(class="form-control", min="1900", max=current_year) }}
+            {% for error in form.year.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.price.label }}
+            {{ form.price(class="form-control", step="0.01") }}
+            {% for error in form.price.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+         <div class="form-group">
+            {{ form.mileage.label }}
+            {{ form.mileage(class="form-control") }}
+            {% for error in form.mileage.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.city.label }}
+            {{ form.city(class="form-control") }}
+            {% for error in form.city.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group">
+            {{ form.description.label }}
+            {{ form.description(class="form-control", rows="6") }}
+            {% for error in form.description.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <h4>Imagens Atuais:</h4>
+            {% if current_images %}
+                <div class="current-images-grid">
+                    {% for image in current_images %}
+                    <div class="current-image-item" id="current-image-{{ image.id }}">
+                        <img src="{{ url_for('static', filename='img/' + image.path) if image.path else url_for('static', filename='img/placeholder.png') }}" alt="Imagem atual">
+                        {% if image.path != 'placeholder.png' and image.path.startswith('user_uploads/') %} 
+                        <label>
+                            <input type="checkbox" name="delete_image_cb" value="{{ image.id }}" onchange="updateDeleteImageIds(this, {{ image.id }})"> Apagar
+                        </label>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>Nenhuma imagem cadastrada.</p>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.vehicle_images.label(text="Adicionar Novas Imagens:") }}
+            {{ form.vehicle_images(class="form-control-file", accept="image/png, image/jpeg, image/gif", multiple="multiple") }}
+            <small>Use png, jpg, jpeg, gif. Múltiplos arquivos podem ser selecionados.</small>
+             {% for error in form.vehicle_images.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        
+        {{ form.submit(class="btn-primary") }}
+        <a href="{{ url_for('user_dashboard') }}" class="btn-secondary" style="margin-left:10px; text-transform:none; display:inline-block; padding:10px 20px;">Cancelar</a>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/model_loader.js') }}"></script>
+<script>
+    // Passa os IDs dos selects e o valor inicial do modelo para a função centralizada
+    setupModelFetching('brand', 'model', "{{ form.model.data | default('', true) | e }}", "{{ url_for('get_models_for_brand', brand_name='__BRAND__') }}");
+
+    function updateDeleteImageIds(checkboxElem, imageId) {
+        const hiddenField = document.getElementById('delete_images_ids_field');
+        let ids = hiddenField.value ? hiddenField.value.split(',') : [];
+        if (checkboxElem.checked) {
+            if (!ids.includes(String(imageId))) {
+                ids.push(String(imageId));
+            }
+        } else {
+            ids = ids.filter(id => id !== String(imageId));
+        }
+        hiddenField.value = ids.join(',');
+    }
+</script>
+{% endblock %}

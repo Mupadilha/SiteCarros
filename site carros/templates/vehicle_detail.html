@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ vehicle.brand }} {{ vehicle.model }}{% endblock %}
+
+{% block content %}
+<section class="vehicle-detail-section">
+    <div class="detail-header">
+        <h1>{{ vehicle.brand }} {{ vehicle.model }} ({{ vehicle.year }})</h1> <p class="price">R$ {{ "%.2f"|format(vehicle.price) }}</p> </div>
+
+    <div class="detail-content">
+        <div class="vehicle-images">
+            {# INÍCIO DO CARROSSEL DE IMAGENS #}
+            {% if vehicle.all_image_urls and vehicle.all_image_urls|length > 0 %}
+                <div class="carousel-container">
+                    <div class="carousel-slides">
+                        {% for image_url in vehicle.all_image_urls %}
+                        <div class="carousel-slide {% if loop.first %}active{% endif %}">
+                            <img src="{{ url_for('static', filename='img/' + image_url) }}" alt="{{ vehicle.brand }} {{ vehicle.model }} - Imagem {{ loop.index }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if vehicle.all_image_urls|length > 1 %}
+                    <button class="carousel-control prev" onclick="changeSlide(-1)">&#10094;</button>
+                    <button class="carousel-control next" onclick="changeSlide(1)">&#10095;</button>
+                    {% endif %}
+                </div>
+            {% else %}
+                 <img src="{{ url_for('static', filename='img/placeholder.png') }}" alt="{{ vehicle.brand }} {{ vehicle.model }}" class="main-vehicle-image"> {% endif %}
+            {# FIM DO CARROSSEL DE IMAGENS #}
+        </div>
+
+        <div class="vehicle-info">
+            <h2>Descrição</h2> <p class="description-text">{{ vehicle.description }}</p> <h2>Detalhes</h2> <ul>
+                <li><strong>Marca:</strong> {{ vehicle.brand }}</li> <li><strong>Modelo:</strong> {{ vehicle.model }}</li> <li><strong>Ano:</strong> {{ vehicle.year }}</li> {% if vehicle.mileage is not none %}
+                <li><strong>Quilometragem:</strong> {{ "{:,}".format(vehicle.mileage)|replace(',', '.') if vehicle.mileage else 'N/A' }} km</li> {% endif %}
+                {% if vehicle.city %}
+                <li><strong>Localização:</strong> {{ vehicle.city }}</li> {% endif %}
+                <li><strong>Anunciado por:</strong> {{ vehicle.username }}</li> <li><strong>Status:</strong> <span class="status-{{ vehicle.status }}">{{ 'Disponível' if vehicle.status == 'available' else 'Vendido' }}</span></li> </ul>
+
+            {# SEÇÃO DE CONTATO COM O VENDEDOR - MAILTO #}
+            <div class="contact-section"> <h3>Interessado? Entre em Contato!</h3> <p>Para mais informações ou para agendar uma visita, entre em contato com o anunciante: {{ vehicle.username }}.</p> {% if vehicle.seller_email %}
+                <a href="mailto:{{ vehicle.seller_email }}?subject=Interesse no veículo {{ vehicle.brand }} {{ vehicle.model }} (ID: {{ vehicle.id }})&body=Olá, {{ vehicle.username }}. Tenho interesse no seu {{ vehicle.brand }} {{ vehicle.model }} anunciado no AutoZone. Gostaria de mais informações." class="btn-contact">
+                    Enviar Email para {{ vehicle.username }}
+                </a>
+                {% else %}
+                <button class="btn-contact" onclick="alert('Informação de contato do vendedor não disponível publicamente.')"> Entrar em Contato (Simulado)
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="actions"> {% if vehicle.status == 'available' %}
+                    <a href="{{ url_for('add_to_cart', vehicle_id=vehicle.id) }}" class="btn-add-cart">Adicionar ao Carrinho/Salvar</a> <a href="{{ url_for('checkout', vehicle_id=vehicle.id) }}" class="btn-buy">Comprar Agora</a> {% else %}
+                    <p class="vehicle-sold-message">Este veículo já foi vendido.</p> {% endif %}
+            </div>
+
+            {# SEÇÃO DE SIMULAÇÃO DE FINANCIAMENTO #}
+            <div class="financing-simulator">
+                <h3>Simular Financiamento</h3>
+                <p><small>(Esta é uma simulação básica e não reflete taxas reais do mercado.)</small></p>
+                <div class="form-group">
+                    <label for="vehiclePrice">Preço do Veículo (R$):</label>
+                    <input type="text" id="vehiclePrice" value="{{ "%.2f"|format(vehicle.price) }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="downPayment">Entrada (R$):</label>
+                    <input type="number" id="downPayment" name="downPayment" min="0" step="1000" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="installments">Número de Parcelas:</label>
+                    <select id="installments" name="installments">
+                        <option value="12">12x</option>
+                        <option value="24" selected>24x</option>
+                        <option value="36">36x</option>
+                        <option value="48">48x</option>
+                        <option value="60">60x</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="interestRate">Taxa de Juros Mensal (Ex: 1.5 para 1.5%):</label>
+                    <input type="number" id="interestRate" name="interestRate" step="0.1" value="1.8"> {# Exemplo de 1.8% a.m. #}
+                </div>
+                <button id="simulateFinancingBtn" class="btn-secondary">Simular</button>
+                <div id="financingResult" style="margin-top: 15px; font-weight: bold;"></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %} 
+{% block title %}Anunciar Veículo{% endblock %} 
+
+{% block content %} 
+<section class="form-section"> 
+    <h2>Anunciar Novo Veículo</h2>
+    <form action="{{ url_for('announce') }}" method="POST" enctype="multipart/form-data" novalidate> 
+        {{ form.hidden_tag() }} {# CSRF token #}
+        <div class="form-group"> 
+            {{ form.brand.label }}
+            {{ form.brand(class="form-control", id="brand") }}
+            {% for error in form.brand.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group"> 
+            {{ form.model.label }}
+            {{ form.model(class="form-control", id="model") }}
+            {% for error in form.model.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group"> 
+            {{ form.year.label }}
+            {{ form.year(class="form-control", min="1900", max=current_year) }}
+            {% for error in form.year.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group"> 
+            {{ form.price.label }}
+            {{ form.price(class="form-control", step="0.01") }}
+            {% for error in form.price.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group"> 
+            {{ form.mileage.label }}
+            {{ form.mileage(class="form-control") }}
+            {% for error in form.mileage.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group"> 
+            {{ form.city.label }}
+            {{ form.city(class="form-control") }}
+            {% for error in form.city.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        <div class="form-group"> 
+            {{ form.description.label }}
+            {{ form.description(class="form-control", rows="6") }}
+            {% for error in form.description.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        
+        <div class="form-group"> 
+            {{ form.vehicle_images.label }}
+            {{ form.vehicle_images(class="form-control-file", accept="image/png, image/jpeg, image/gif", multiple="multiple") }}
+            <small>Use png, jpg, jpeg, gif. Múltiplos arquivos podem ser selecionados.</small> 
+            {% for error in form.vehicle_images.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+        </div>
+        
+        {{ form.submit(class="btn-primary") }}
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/model_loader.js') }}"></script>
+<script>
+    // Passa os IDs dos selects e o valor inicial do modelo (se houver) para a função centralizada
+    // O valor inicial do modelo é útil se o formulário for recarregado após um erro de validação
+    // Neste caso (announce), não há modelo inicial, a menos que você queira persistir após erro.
+    setupModelFetching('brand', 'model', "{{ form.model.data | default('', true) | e }}", "{{ url_for('get_models_for_brand', brand_name='__BRAND__') }}");
+</script>
+{% endblock %}

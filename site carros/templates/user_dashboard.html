@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Painel{% endblock %}
+
+{% block content %}
+<section class="user-dashboard">
+    <h1>Bem-vindo, {{ session['username'] }}!</h1>
+
+    <div class="dashboard-section">
+        <h2>Meus Anúncios</h2>
+        {% if user_vehicles %}
+            <div class="vehicle-grid">
+                {% for vehicle in user_vehicles %}
+                    {# ... (card do veículo) ... #}
+                    <div class="vehicle-card">
+                        <img src="{{ url_for('static', filename='img/' + vehicle.display_image_url) if vehicle.display_image_url else url_for('static', filename='img/placeholder.png') }}" alt="{{ vehicle.brand }} {{ vehicle.model }}">
+                        <h3>{{ vehicle.brand }} {{ vehicle.model }}</h3>
+                        <p>Ano: {{ vehicle.year }}</p>
+                        {% if vehicle.mileage is not none %}
+                        <p>Km: {{ "{:,}".format(vehicle.mileage)|replace(',', '.') if vehicle.mileage else 'N/A' }}</p> {% endif %}
+                        <p class="price">R$ {{ "%.2f"|format(vehicle.price) }}</p> <p class="status-{{ vehicle.status }}">{{ 'Disponível' if vehicle.status == 'available' else 'Vendido' }}</p> <a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}" class="btn-view-details">Ver Anúncio</a>
+                        <div class="vehicle-actions" style="margin-top: 10px; display: flex; justify-content: space-around;">
+                            <a href="{{ url_for('edit_vehicle', vehicle_id=vehicle.id) }}" class="btn-secondary btn-edit-vehicle" style="padding: 8px 12px; font-size: 0.9em; background-color: var(--secondary-color); color:white;">Editar</a>
+                            <form action="{{ url_for('delete_vehicle', vehicle_id=vehicle.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja apagar este anúncio? Esta ação não pode ser desfeita.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/> {# Adicionar se CSRF estiver globalmente ativo para POST #}
+                                <button type="submit" class="btn-remove-cart" style="background-color: var(--danger-color); padding: 8px 12px; font-size: 0.9em;">Apagar</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Você ainda não anunciou nenhum veículo. <a href="{{ url_for('announce') }}">Anuncie agora!</a></p> 
+        {% endif %}
+
+        {% if total_pages_user_vehicles and total_pages_user_vehicles > 1 %}
+        <nav aria-label="Page navigation" class="pagination">
+            <ul>
+                {% set query_params_user_vehicles = request.args.to_dict() %}
+                {% if current_page_user_vehicles > 1 %}
+                    <li><a href="{{ url_for(request.endpoint, **dict(query_params_user_vehicles, page_user_vehicles=current_page_user_vehicles-1)) }}">&laquo; Anterior</a></li>
+                {% else %}
+                    <li class="disabled"><span>&laquo; Anterior</span></li>
+                {% endif %}
+
+                {% for page_num_uv in range(1, total_pages_user_vehicles + 1) %}
+                    {% if page_num_uv == current_page_user_vehicles %}
+                        <li class="active"><span>{{ page_num_uv }}</span></li>
+                    {% elif page_num_uv - current_page_user_vehicles < 3 and current_page_user_vehicles - page_num_uv < 3 or page_num_uv == 1 or page_num_uv == total_pages_user_vehicles %}
+                        <li><a href="{{ url_for(request.endpoint, **dict(query_params_user_vehicles, page_user_vehicles=page_num_uv)) }}">{{ page_num_uv }}</a></li>
+                    {% elif page_num_uv - current_page_user_vehicles == 3 or current_page_user_vehicles - page_num_uv == 3 %}
+                        <li><span>...</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if current_page_user_vehicles < total_pages_user_vehicles %}
+                    <li><a href="{{ url_for(request.endpoint, **dict(query_params_user_vehicles, page_user_vehicles=current_page_user_vehicles+1)) }}">Próximo &raquo;</a></li>
+                {% else %}
+                    <li class="disabled"><span>Próximo &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-section">
+        <h2>Veículos Salvos/No Carrinho</h2>
+        {# ... (conteúdo de veículos salvos) ... #}
+        {% if saved_vehicles %}
+            <div class="vehicle-grid">
+                {% for vehicle in saved_vehicles %}
+                    <div class="vehicle-card">
+                        <img src="{{ url_for('static', filename='img/' + vehicle.display_image_url) if vehicle.display_image_url else url_for('static', filename='img/placeholder.png') }}" alt="{{ vehicle.brand }} {{ vehicle.model }}"> <h3>{{ vehicle.brand }} {{ vehicle.model }}</h3> <p>Ano: {{ vehicle.year }}</p> {% if vehicle.mileage is not none %}
+                        <p>Km: {{ "{:,}".format(vehicle.mileage)|replace(',', '.') if vehicle.mileage else 'N/A' }}</p> {% endif %}
+                        <p class="price">R$ {{ "%.2f"|format(vehicle.price) }}</p> <a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}" class="btn-view-details">Ver Detalhes</a> <a href="{{ url_for('remove_from_cart', vehicle_id=vehicle.id) }}" class="btn-remove-cart">Remover do Carrinho</a> {% if vehicle.status == 'available' %}
+                            <a href="{{ url_for('checkout', vehicle_id=vehicle.id) }}" class="btn-buy" style="background-color: var(--button-primary-bg); color:var(--button-primary-text)">Comprar</a> {% else %}
+                            <p class="vehicle-sold-message">Vendido</p> {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Você não tem veículos salvos ou no carrinho.</p> 
+        {% endif %}
+    </div>
+
+    <div class="dashboard-section">
+        <h2>Veículos Comprados</h2>
+        {# ... (conteúdo de veículos comprados) ... #}
+        {% if purchased_vehicles %}
+            <div class="vehicle-grid">
+                {% for purchase in purchased_vehicles %}
+                    <div class="vehicle-card">
+                        <img src="{{ url_for('static', filename='img/' + purchase.display_image_url) if purchase.display_image_url else url_for('static', filename='img/placeholder.png') }}" alt="{{ purchase.brand }} {{ purchase.model }}"> <h3>{{ purchase.brand }} {{ purchase.model }}</h3> <p>Ano: {{ purchase.year }}</p> {% if purchase.mileage is not none %}
+                        <p>Km: {{ "{:,}".format(purchase.mileage)|replace(',', '.') if purchase.mileage else 'N/A' }}</p> {% endif %}
+                        <p class="price">R$ {{ "%.2f"|format(purchase.price) }}</p> <p class="purchase-date">Comprado em: {{ purchase.purchase_date.split(' ')[0] }}</p> <a href="{{ url_for('vehicle_detail', vehicle_id=purchase.id) }}" class="btn-view-details">Ver Detalhes</a> </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Você ainda não realizou nenhuma compra.</p> 
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

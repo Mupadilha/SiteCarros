@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if search_query %}Resultados para "{{ search_query }}"{% else %}Anúncios de Carros{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="vehicle-listing-section">
+    {% if search_query %}
+        <h1 class="page-title">Resultados da busca por: <strong>"{{ search_query }}"</strong></h1>
+    {% else %}
+        <h1 class="page-title">Anúncios Recentes</h1>
+    {% endif %}
+
+    <div class="vehicle-listing">
+        <div class="filter-sidebar">
+            <h3>Filtrar Veículos</h3>
+            <form action="{{ url_for('filter_vehicles') }}" method="GET">
+                {# ... (conteúdo do formulário de filtro) ... #}
+                <div class="form-group">
+                    <label for="brand">Marca:</label>
+                    <select id="brand" name="brand">
+                        <option value="all"{% if not selected_brand or selected_brand == 'all' %} selected{% endif %}>Todas</option>
+                        {% for brand_item in brands %}
+                            <option value="{{ brand_item }}" {% if selected_brand == brand_item %}selected{% endif %}>{{ brand_item }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="model">Modelo:</label>
+                    <select id="model" name="model">
+                        <option value="all"{% if not selected_model or selected_model == 'all' %} selected{% endif %}>Todos</option>
+                         {% if selected_brand and selected_brand != 'all' and models %}
+                            {% for model_item in models %} 
+                                <option value="{{ model_item }}" {% if selected_model == model_item %}selected{% endif %}>{{ model_item }}</option>
+                            {% endfor %}
+                        {% elif models and (not selected_brand or selected_brand == 'all') %}
+                             {% for model_item in models %} 
+                                <option value="{{ model_item }}" {% if selected_model == model_item %}selected{% endif %}>{{ model_item }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="year">Ano:</label>
+                    <select id="year" name="year">
+                        <option value="all"{% if not selected_year or selected_year == 'all' %} selected{% endif %}>Todos</option>
+                        {% for year_item in years %}
+                            <option value="{{ year_item }}" {% if selected_year == year_item|string %}selected{% endif %}>{{ year_item }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group price-group">
+                    <label for="min_price">Preço Min (R$):</label>
+                    <input type="number" id="min_price" name="min_price" step="1000" value="{{ selected_min_price if selected_min_price else '' }}">
+                </div>
+                <div class="form-group price-group">
+                    <label for="max_price">Preço Max (R$):</label>
+                    <input type="number" id="max_price" name="max_price" step="1000" value="{{ selected_max_price if selected_max_price else '' }}">
+                </div>
+                <button type="submit" class="btn-primary">Aplicar Filtros</button>
+                <a href="{{ url_for('index') }}" class="clear-filters">Limpar Filtros</a>
+            </form>
+        </div>
+
+        <div class="vehicle-grid">
+            {# ... (loop de veículos) ... #}
+            {% if vehicles %}
+                {% for vehicle in vehicles %}
+                    <div class="vehicle-card">
+                        <a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}" class="card-image-link">
+                            <img src="{{ url_for('static', filename='img/' + vehicle.display_image_url) if vehicle.display_image_url else url_for('static', filename='img/placeholder.png') }}" alt="{{ vehicle.brand }} {{ vehicle.model }}">
+                        </a>
+                        <div class="vehicle-card-content">
+                            <h3><a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}">{{ vehicle.brand }} {{ vehicle.model }}</a></h3>
+                            <p class="year-mileage">{{ vehicle.year }} - {{ "{:,.0f}".format(vehicle.mileage)|replace(',', '.') if vehicle.mileage is not none else 'N/A' }} km</p>
+                             {% if vehicle.city %}
+                            <p class="card-location">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt-fill" viewBox="0 0 16 16">
+                                  <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                                </svg>
+                                {{ vehicle.city }}
+                            </p>
+                            {% endif %}
+                            <p class="price">R$ {{ "%.2f"|format(vehicle.price)|replace('.', ',') }}</p>
+                            <a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}" class="btn-secondary btn-view-details">Ver Detalhes</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="no-vehicles">Nenhum veículo encontrado com os critérios atuais.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if total_pages and total_pages > 1 %}
+    <nav aria-label="Page navigation" class="pagination">
+        <ul>
+            {% set query_params = request.args.to_dict() %}
+            {% if current_page > 1 %}
+                <li><a href="{{ url_for(request.endpoint, **dict(query_params, page=current_page-1)) }}">&laquo; Anterior</a></li>
+            {% else %}
+                <li class="disabled"><span>&laquo; Anterior</span></li>
+            {% endif %}
+
+            {% for page_num in range(1, total_pages + 1) %}
+                {% if page_num == current_page %}
+                    <li class="active"><span>{{ page_num }}</span></li>
+                {% elif page_num - current_page < 3 and current_page - page_num < 3 or page_num == 1 or page_num == total_pages %}
+                    <li><a href="{{ url_for(request.endpoint, **dict(query_params, page=page_num)) }}">{{ page_num }}</a></li>
+                {% elif page_num - current_page == 3 or current_page - page_num == 3 %}
+                     <li><span>...</span></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if current_page < total_pages %}
+                <li><a href="{{ url_for(request.endpoint, **dict(query_params, page=current_page+1)) }}">Próximo &raquo;</a></li>
+            {% else %}
+                <li class="disabled"><span>Próximo &raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{# ... (seu JavaScript existente para model_loader) ... #}
+<script>
+// Script para carregar modelos no filtro da sidebar (mantido, mas idealmente centralizado)
+document.addEventListener('DOMContentLoaded', function() {
+    const brandSelect = document.getElementById('brand'); 
+    const modelSelect = document.getElementById('model'); 
+    
+    const initialSelectedModel = "{{ selected_model | default('', true) | e }}";
+
+    function fetchModelsForSidebar(brandName, preSelectedModel) {
+        if (brandName && brandName !== 'all') {
+            modelSelect.disabled = true;
+            modelSelect.innerHTML = '<option value="">Carregando...</option>';
+            fetch(`/api/models_for_brand/${encodeURIComponent(brandName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    modelSelect.innerHTML = '<option value="all">Todos</option>'; 
+                    if (data.models && data.models.length > 0) {
+                        data.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model;
+                            option.textContent = model;
+                            if (model === preSelectedModel) {
+                                option.selected = true;
+                            }
+                            modelSelect.appendChild(option);
+                        });
+                    }
+                    modelSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar modelos:', error);
+                    modelSelect.innerHTML = '<option value="all">Erro</option>';
+                    modelSelect.disabled = true; 
+                });
+        } else {
+            let currentModelsHTML = '<option value="all" selected>Todos</option>';
+            {% if models and (not selected_brand or selected_brand == 'all') %}
+                {% for model_item in models %}
+                    currentModelsHTML += `<option value="{{ model_item }}" {% if selected_model == model_item %}selected{% endif %}>{{ model_item }}</option>`;
+                {% endfor %}
+            {% endif %}
+            modelSelect.innerHTML = currentModelsHTML;
+            if(initialSelectedModel && brandName === 'all'){ 
+                 modelSelect.value = initialSelectedModel;
+            }
+            modelSelect.disabled = false;
+        }
+    }
+
+    if (brandSelect) {
+        brandSelect.addEventListener('change', function() {
+            fetchModelsForSidebar(this.value, null); 
+        });
+
+        if (brandSelect.value && brandSelect.value !== 'all') {
+            fetchModelsForSidebar(brandSelect.value, initialSelectedModel);
+        } else if (brandSelect.value === 'all' && initialSelectedModel) {
+            if(modelSelect.querySelector('option[value="' + initialSelectedModel + '"]')){
+                 modelSelect.value = initialSelectedModel;
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

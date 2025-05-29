@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Bem-Vindo{% endblock %}
+
+{% block content %}
+<section class="welcome-section">
+    <h1>Bem-vindo ao AutoZone!</h1>
+    <p>Encontre o carro dos seus sonhos ou anuncie o seu de forma rápida e fácil.</p>
+
+    <div class="filter-box">
+        <h2>Encontre seu veículo</h2>
+        <form action="{{ url_for('filter_vehicles') }}" method="GET">
+            <div class="form-group">
+                <label for="brand">Marca:</label>
+                <select id="brand" name="brand">
+                    <option value="all">Todas as Marcas</option>
+                    {% for brand_item in brands %} {# Renamed from brand to brand_item to avoid conflict with outer loop if any #}
+                        <option value="{{ brand_item }}" {% if selected_brand == brand_item %}selected{% endif %}>{{ brand_item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="model">Modelo:</label>
+                <select id="model" name="model">
+                    <option value="all">Todos os Modelos</option>
+                    {# Modelos são carregados via JavaScript. #}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="year">Ano:</label>
+                <select id="year" name="year">
+                    <option value="all">Todos os Anos</option>
+                    {% for year_item in years %} {# Renamed from year to year_item #}
+                        <option value="{{ year_item }}" {% if selected_year == year_item|string %}selected{% endif %}>{{ year_item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group price-group">
+                <label for="min_price">Preço (min):</label>
+                <input type="number" id="min_price" name="min_price" step="1000" value="{{ selected_min_price if selected_min_price else '' }}">
+            </div>
+            <div class="form-group price-group">
+                <label for="max_price">Preço (max):</label>
+                <input type="number" id="max_price" name="max_price" step="1000" value="{{ selected_max_price if selected_max_price else '' }}">
+            </div>
+            <button type="submit" class="btn-primary">Buscar Veículos</button>
+        </form>
+    </div>
+    <p class="explore-link">
+        Ou <a href="{{ url_for('index') }}">explore todos os anúncios</a>.
+    </p>
+</section>
+
+{# NOVO: Seção de Links Rápidos na Página Inicial #}
+<section class="homepage-quick-links">
+    <div class="quick-links-container">
+        <h2>Explore o AutoZone</h2>
+        <div class="quick-links-columns">
+            <div class="quick-links-column">
+                <h4>Comprar</h4>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Todos os Veículos</a></li>
+                    <li><a href="{{ url_for('filter_vehicles', brand='all', model='all', year='all', min_price='', max_price='') }}">Carros Usados</a></li> {# Exemplo de link de filtro #}
+                    <li><a href="#">Carros Novos</a></li> {# Ajustar links conforme suas rotas de filtro #}
+                    <li><a href="#">Motos</a></li>
+                </ul>
+            </div>
+            <div class="quick-links-column">
+                <h4>Vender</h4>
+                <ul>
+                    <li><a href="{{ url_for('announce') }}">Anunciar Veículo</a></li>
+                    {% if 'user_id' in session %}
+                    <li><a href="{{ url_for('user_dashboard') }}">Meu Painel</a></li>
+                    {% endif %}
+                    <li><a href="#">Dicas para Vender</a></li>
+                </ul>
+            </div>
+            <div class="quick-links-column">
+                <h4>Recursos</h4>
+                <ul>
+                    <li><a href="#">Simular Financiamento</a></li> {# Link para uma futura página de simulação geral ou blog #}
+                    <li><a href="#">Notícias Automotivas</a></li>
+                    <li><a href="#">Guia de Preços (FIPE)</a></li>
+                </ul>
+            </div>
+            <div class="quick-links-column">
+                <h4>AutoZone</h4>
+                <ul>
+                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="#">Contato</a></li>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{# FIM: Seção de Links Rápidos #}
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const brandSelect = document.getElementById('brand');
+    const modelSelect = document.getElementById('model');
+    const initialSelectedModel = "{{ selected_model | default('', true) | e }}";
+
+    function fetchModels(brandName, preSelectedModel) {
+        if (brandName && brandName !== 'all') {
+            modelSelect.disabled = true;
+            modelSelect.innerHTML = '<option value="">Carregando modelos...</option>';
+            fetch(`/api/models_for_brand/${encodeURIComponent(brandName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    modelSelect.innerHTML = '<option value="all">Todos os Modelos</option>';
+                    if (data.models && data.models.length > 0) {
+                        data.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model;
+                            option.textContent = model;
+                            if (model === preSelectedModel) {
+                                option.selected = true;
+                            }
+                            modelSelect.appendChild(option);
+                        });
+                    }
+                    modelSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar modelos:', error);
+                    modelSelect.innerHTML = '<option value="all">Erro ao carregar</option>';
+                    modelSelect.disabled = true; 
+                });
+        } else {
+            modelSelect.innerHTML = '<option value="all">Todos os Modelos</option>';
+            modelSelect.disabled = false; 
+        }
+    }
+
+    brandSelect.addEventListener('change', function() {
+        fetchModels(this.value, null); 
+    });
+
+    if (brandSelect.value) {
+        fetchModels(brandSelect.value, initialSelectedModel);
+    } else {
+        modelSelect.innerHTML = '<option value="all">Todos os Modelos</option>';
+        modelSelect.disabled = false;
+    }
+});
+</script>
+{% endblock %}

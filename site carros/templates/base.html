@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoZone - {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="navbar-main">
+            <div class="navbar-left">
+                <div class="logo">
+                    <a href="{{ url_for('welcome') }}">AutoZone</a> </div>
+                <ul class="nav-links main-nav-links">
+                    <li><a href="{{ url_for('index') }}">Comprar</a></li>
+                    <li><a href="{{ url_for('announce') if 'user_id' in session else url_for('login', next=url_for('announce')) }}">Vender</a></li>
+                    <li><a href="#">Serviços</a></li> 
+                    <li><a href="#">Notícias</a></li>
+                </ul>
+            </div>
+            
+            <div class="navbar-center">
+                <form method="GET" action="{{ url_for('search') }}" class="header-search-form">
+                    {{ search_form_global.hidden_tag() }} {# CSRF Token, se o form for POST ou se habilitado globalmente para GET #}
+                    {{ search_form_global.query(class="search-input", placeholder="Busque por marca ou modelo") }}
+                    <button type="submit" class="search-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+
+            <div class="navbar-right">
+                <ul class="nav-links user-nav-links">
+                    {% if 'user_id' in session %}
+                        <li><a href="{{ url_for('user_dashboard') }}">Meu Painel</a></li>
+                        <li><a href="{{ url_for('logout') }}">Sair</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('login') }}">Entrar</a></li>
+                        <li><a href="{{ url_for('register') }}" class="btn-register-header">Cadastrar</a></li>
+                    {% endif %}
+                     <li><button id="dark-mode-toggle" title="Alternar modo claro/escuro" class="dark-mode-button">🌙</button></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-main-content">
+            <div class="footer-column">
+                <h4>Comprar</h4>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Carros usados</a></li>
+                    <li><a href="{{ url_for('index') }}">Carros novos</a></li>
+                    <li><a href="#">Motos usadas</a></li>
+                    <li><a href="#">Motos novas</a></li>
+                </ul>
+                <h4 class="footer-subheader">Vender</h4>
+                <ul>
+                    <li><a href="{{ url_for('announce') if 'user_id' in session else url_for('login', next=url_for('announce')) }}">Vender carro</a></li>
+                    <li><a href="#">Vender moto</a></li>
+                    {% if 'user_id' in session %}
+                    <li><a href="{{ url_for('user_dashboard') }}">Gerenciar meu anúncio</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Serviços</h4>
+                <ul>
+                    <li><a href="#">Financiamento</a></li>
+                    <li><a href="#">Catálogo 0km</a></li>
+                    <li><a href="#">Seguro veículo</a></li>
+                    <li><a href="#">Comparar veículos</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Notícias</h4>
+                <ul>
+                    <li><a href="#">Portal</a></li>
+                    <li><a href="#">Últimas notícias</a></li>
+                    <li><a href="#">Testes</a></li>
+                    <li><a href="#">Comparativos</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Institucional</h4>
+                <ul>
+                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            <div class="footer-copyright">
+                <p>&copy; {{ current_year }} AutoZone. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

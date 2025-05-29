@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - {{ vehicle.brand }} {{ vehicle.model }}{% endblock %}
+
+{% block content %}
+<section class="checkout-section">
+    <div class="checkout-summary">
+        <h3>Resumo do Pedido</h3>
+        <div class="vehicle-summary-card">
+            <img src="{{ url_for('static', filename='img/' + vehicle.display_image_url) if vehicle.display_image_url else url_for('static', filename='img/placeholder.png') }}" alt="{{ vehicle.brand }} {{ vehicle.model }}">
+            <div>
+                <h4>{{ vehicle.brand }} {{ vehicle.model }} ({{ vehicle.year }})</h4>
+                {% if vehicle.mileage is not none %}
+                <p>Km: {{ "{:,.0f}".format(vehicle.mileage)|replace(',', '.') if vehicle.mileage else 'N/A' }}</p>
+                {% endif %}
+                {% if vehicle.city %}
+                <p>Local: {{ vehicle.city }}</p>
+                {% endif %}
+                <p>Preço: <span class="price-summary">R$ {{ "%.2f"|format(vehicle.price|float) }}</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="payment-details">
+        <h3>Detalhes de Pagamento</h3>
+        <form action="{{ url_for('process_purchase') }}" method="POST" novalidate>
+            {{ form.hidden_tag() }} {# CSRF token e vehicle_id #}
+            
+            <div class="form-group">
+                {{ form.card_number.label }}
+                {{ form.card_number(class="form-control", placeholder="XXXX XXXX XXXX XXXX", required="required") }}
+                {% for error in form.card_number.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+            </div>
+            <div class="form-group">
+                {{ form.card_name.label }}
+                {{ form.card_name(class="form-control", required="required") }}
+                {% for error in form.card_name.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+            </div>
+            <div class="form-group inline-group" style="display: flex; gap: 15px;">
+                <div class="small-group" style="flex: 1;">
+                    {{ form.expiry_date.label }}
+                    {{ form.expiry_date(class="form-control", placeholder="MM/AA", required="required", id="expiry_date") }} {# Adicionado id para script JS #}
+                    {% for error in form.expiry_date.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+                </div>
+                <div class="small-group" style="flex: 1;">
+                    {{ form.cvv.label }}
+                    {{ form.cvv(class="form-control", placeholder="XXX", required="required") }}
+                    {% for error in form.cvv.errors %} <span class="text-danger error-message">{{ error }}</span> {% endfor %}
+                </div>
+            </div>
+            <div class="form-group checkbox-group" style="display: flex; align-items: center; margin-top: 10px;">
+                <input type="checkbox" id="terms" name="terms" required style="width: auto; margin-right: 8px;">
+                <label for="terms" style="margin-bottom: 0;">Concordo com os <a href="#" target="_blank">Termos e Condições</a></label>
+            </div>
+            {{ form.submit(class="btn-primary confirm-purchase", style="width:100%; margin-top:15px;") }}
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Seu script de formatação de data de validade pode ser mantido em scripts.js
+// ou movido para cá se for específico desta página.
+// Verifique se o ID 'expiry_date' está no input correspondente.
+</script>
+{% endblock %}
